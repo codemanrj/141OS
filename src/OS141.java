@@ -47,9 +47,13 @@ public class OS141 {
 		for(int i=0; i< argv.length; i++)
 			System.out.println(argv[i]);
 
-		numUsers = Math.abs(Integer.parseInt(argv[0]));
-		numPrinters = Math.abs(Integer.parseInt(argv[argv.length -1]));
-		numDisks = Math.abs(Integer.parseInt(argv[argv.length-2]));
+		int argIndex = 0;
+		numUsers = Math.abs(Integer.parseInt(argv[argIndex]));
+		argIndex = argIndex + numUsers + 1;
+		numDisks = Math.abs(Integer.parseInt(argv[argIndex]));
+		argIndex++;
+		numPrinters = Math.abs(Integer.parseInt(argv[argIndex]));
+		
 
 		userNames = new String[numUsers];
 
