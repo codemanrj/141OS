@@ -22,7 +22,7 @@ public class OS141 {
 	UserThread users[];
 	Printer printers[];
 	Disk disks[];
-	//PrinterManager pm;
+	PrinterManager pm;
 	DiscManager dm;
 	DirectoryManager dirm;
 
@@ -43,6 +43,7 @@ public class OS141 {
 			printers[i] = new Printer(i+1);
 		}
 
+		pm = new PrinterManager(numPrinters);
 		dm = new DiskManager(numDisks);
 		dirm = new DirectoryManager();
 	}
@@ -191,7 +192,6 @@ class UserThread extends Thread {
 
 	void interpretLine(){
 		int i = 0;
-		String fileName;
 		if(line.charAt(i) == '.')
 		{
 			i++;
@@ -263,10 +263,55 @@ class UserThread extends Thread {
 
 		read();
 	}
+
 	void requestPrint() {
+
+		int i = 0;
+		while(line.charAt(i) != '\0')
+		{
+			i++;
+		}
+
+		String fname = getFileName(i+1);
 		PrintJobThread p = new PrintJobThread();
 		p.start();
+		p.doJob(fname);
+
 	}
+}
+class PrintJobThread extends Thread{
+	StringBuffer line;
+
+	PrintJobThread()
+	{
+		line = new StringBuffer();
+	}
+
+	void doJob(String s)
+	{
+		StringBuffer file = new StringBuffer(s);
+		//check if the file I'm going to print even exists
+		File info = dm.lookup(file);
+		if(info)
+		{
+			int beginSector = info.getSector();
+			int disk = info.getDisk();
+			int length = info.getLength();
+
+			int printerToUse = pm.request();
+
+			for(int i = beginSector; i < length; i++)
+			{
+				disks[disk].read(i, line);
+				printers[printerToUse].print(line);
+				line.delete(0, line.length());
+			}
+			
+
+		}
+	}
+	
+
 }
 
 class FileInfo{
@@ -279,6 +324,17 @@ class FileInfo{
 		diskNumber = disk;
 		startingSector = sector;
 		fileLength = length;
+	}
+
+	int getDisk()
+	{
+		return diskNumber;
+	}
+	int getSector(){
+		return startingSector;
+	}
+	int getLength(){
+		return fileLength;
 	}
 }
 
@@ -297,11 +353,12 @@ class DirectoryManager {
 	FileInfo lookup(StringBuffer fileName)
 	{
 		FileInfo data = T.get(fileName);
-		if(i != null)
+		if(data != null)
 		{
 			return data;
 		}
 		else{
+			System.out.println("Could not find the specified file. ");
 			return 0;
 		}
 	}
@@ -369,6 +426,3 @@ class PrinterManager extends ResourceManager {
 	}
 }
 
-class PrintJobThread extends Thread{
-
-}
