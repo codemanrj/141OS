@@ -21,9 +21,9 @@ public class OS141 {
 	String userNames[];
 	UserThread users[];
 	Printer printers[];
-	Disk disks[];
-	PrinterManager pm;
-	DiscManager dm;
+	public Disk disks[];
+	public PrinterManager pm;
+	public DiskManager dm;
 	DirectoryManager dirm;
 
 	OS141(String [] args)
@@ -80,7 +80,168 @@ public class OS141 {
 		}
 
 	}
+	
+	class UserThread extends Thread {
+		
+		private StringBuffer line;
+		private String fileName;
+		File inputFile;
+		Scanner in;
+
+		UserThread(int id){
+			this.line = new StringBuffer();
+			fileName = "USER" + Integer.toString(id);
+			inputFile = new File(fileName);
+			try {
+				in = new Scanner(inputFile);
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			System.out.println("Created a user");
+		}
+		
+		void read(){	
+			if(in.hasNextLine())
+			{
+				line.append(in.nextLine());
+				interpretLine();
+			}
+		}
+
+		void interpretLine(){
+			int i = 0;
+			if(line.charAt(i) == '.')
+			{
+				i++;
+				if(line.charAt(i) == 's')
+				{
+					saveToDisk();
+				}
+				else{ //it is a 'p'
+					requestPrint();
+				}
+			}
+		}
+
+		//the line in buffer contains either save or print
+		//and the name of the file 
+		//i is the index where the name starts on line
+		String getFileName(int i)
+		{
+			 return line.substring(i);
+		}
+
+		void saveToDisk() {
+			int diskToUse = dm.request(); //request the next available disk
+			int sector = dm.getNextFreeSector(diskToUse);
+
+			int i = 0;
+			while(line.charAt(i) != '\0')
+			{
+				i++;
+			}
+
+			String fname = getFileName(i+1); //this name will be entered in to Directory Manager
+										   // as a string buffer
+
+			//clear the string buffer
+			line.delete(0, line.length());
+
+			//put the next line in it 
+			// while the second characte of this line isn't e for .end
+			// I want to save this line to the disk...
+			line.append(in.nextLine());
+
+			int writingTo = sector;
+			int length = 0;
+			while(line.charAt(1) != 'e')
+			{
+				try {
+					disks[diskToUse].write(writingTo, line);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				writingTo++;
+				length++;
+				
+				//clear line
+				line.delete(0, line.length());
+
+				//append the next
+				line.append(in.nextLine());
+			}
+
+			if(line.charAt(1) == 'e')
+			{
+				line.delete(0, line.length());
+
+			}
+
+
+			//create a FileInfo object for this file
+			FileInfo thisFile = new FileInfo(diskToUse, sector, length);
+			StringBuffer n = new StringBuffer(fname);
+			dirm.enter(n, thisFile);
+
+			read();
+		}
+
+		void requestPrint() {
+
+			int i = 0;
+			while(line.charAt(i) != '\0')
+			{
+				i++;
+			}
+
+			String fname = getFileName(i+1);
+			PrintJobThread p = new PrintJobThread();
+			p.start();
+			p.doJob(fname);
+
+		}
+	}
+	
+	class PrintJobThread extends Thread{
+		StringBuffer line;
+	
+		PrintJobThread()
+		{
+			line = new StringBuffer();
+		}
+	
+		void doJob(String s)
+		{
+			StringBuffer file = new StringBuffer(s);
+			//check if the file I'm going to print even exists
+			FileInfo info = dirm.lookup(file);
+			if(info != null)
+			{
+				int beginSector = info.getSector();
+				int disk = info.getDisk();
+				int length = info.getLength();
+	
+				int printerToUse = pm.request();
+	
+				for(int i = beginSector; i < length; i++)
+				{
+					try {
+						disks[disk].read(i, line);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					printers[printerToUse].print(line);
+					line.delete(0, line.length());
+				}
+			}
+		}
+	}
+
 }
+
 
 class Disk {
 	static final int NUM_SECTORS = 1024;
@@ -165,153 +326,6 @@ class Printer
 				e.printStackTrace();
 			}
 	}	
-}
-
-class UserThread extends Thread {
-	
-	private StringBuffer line;
-	private String fileName;
-	File inputFile;
-	Scanner in;
-
-	UserThread(int id){
-		this.line = new StringBuffer();
-		fileName = "USER" + Integer.toString(id);
-		inputFile = new File(fileName);
-		in = new Scanner(inputFile);
-		System.out.println("Created a user");
-	}
-	
-	void read(){	
-		if(in.hasNextLine())
-		{
-			line.append(in.nextLine());
-			interpretLine();
-		}
-	}
-
-	void interpretLine(){
-		int i = 0;
-		if(line.charAt(i) == '.')
-		{
-			i++;
-			if(line.charAt(i) == 's')
-			{
-				saveToDisk();
-			}
-			else{ //it is a 'p'
-				requestPrint();
-			}
-		}
-	}
-
-	//the line in buffer contains either save or print
-	//and the name of the file 
-	//i is the index where the name starts on line
-	String getFileName(int i)
-	{
-		 return line.substring(i);
-	}
-
-	void saveToDisk() {
-		int diskToUse = dm.request(); //request the next available disk
-		int sector = disks[diskToUse].getNextFreeSector();
-
-		int i = 0;
-		while(line.charAt(i) != '\0')
-		{
-			i++;
-		}
-
-		String fname = getFileName(i+1); //this name will be entered in to Directory Manager
-									   // as a string buffer
-
-		//clear the string buffer
-		line.delete(0, line.length());
-
-		//put the next line in it 
-		// while the second characte of this line isn't e for .end
-		// I want to save this line to the disk...
-		line.append(in.nextLine);
-
-		int writingTo = sector;
-		int length = 0;
-		while(line.charAt[1] != 'e')
-		{
-			disks[diskToUse].write(writingTo, line);
-			writingTo++;
-			length++;
-			
-			//clear line
-			line.delete(0, line.length());
-
-			//append the next
-			line.append(in.nextLine);
-		}
-
-		if(line.charAt[1] == 'e')
-		{
-			line.delete(0, line.length());
-
-		}
-
-
-		//create a FileInfo object for this file
-		FileInfo thisFile = new FileInfo(diskToUse, sector, writeTo - sector);
-		StringBuffer n = new StringBuffer(fname);
-		dm.enter(n, thisFile);
-
-		read();
-	}
-
-	void requestPrint() {
-
-		int i = 0;
-		while(line.charAt(i) != '\0')
-		{
-			i++;
-		}
-
-		String fname = getFileName(i+1);
-		PrintJobThread p = new PrintJobThread();
-		p.start();
-		p.doJob(fname);
-
-	}
-}
-class PrintJobThread extends Thread{
-	StringBuffer line;
-
-	PrintJobThread()
-	{
-		line = new StringBuffer();
-	}
-
-	void doJob(String s)
-	{
-		StringBuffer file = new StringBuffer(s);
-		//check if the file I'm going to print even exists
-		File info = dm.lookup(file);
-		if(info)
-		{
-			int beginSector = info.getSector();
-			int disk = info.getDisk();
-			int length = info.getLength();
-
-			int printerToUse = pm.request();
-
-			for(int i = beginSector; i < length; i++)
-			{
-				disks[disk].read(i, line);
-				printers[printerToUse].print(line);
-				line.delete(0, line.length());
-			}
-			
-
-		}
-	}
-	
-
 }
 
 class FileInfo{
@@ -403,21 +417,17 @@ class DiskManager extends ResourceManager {
 		  nextFreeSector[i] = 0;
 	  }
   }
-
 	//should I override request to also return the sector or make a new method to return nextfreesector i
   int getNextFreeSector(int i)
   {
 	  return nextFreeSector[i];
   }
-
-
 	//modified to update and keep track of the next free sector
 	synchronized void release( int index, int sectorsUsed ) {
 		isFree[index] = true;
 		nextFreeSector[index] += sectorsUsed;
 		this.notify(); // let a blocked thread run
 	}
-
 }
 
 class PrinterManager extends ResourceManager {
