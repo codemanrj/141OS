@@ -24,6 +24,7 @@ public class OS141 {
 	Disk disks[];
 	//PrinterManager pm;
 	DiscManager dm;
+	DirectoryManager dirm;
 
 	OS141(String [] args)
 	{
@@ -43,6 +44,7 @@ public class OS141 {
 		}
 
 		dm = new DiskManager(numDisks);
+		dirm = new DirectoryManager();
 	}
 	void configure(String[] argv)
 	{
@@ -176,18 +178,15 @@ class UserThread extends Thread {
 		fileName = "USER" + Integer.toString(id);
 		inputFile = new File(fileName);
 		in = new Scanner(inputFile);
-
 		System.out.println("Created a user");
 	}
 	
-	void read(){
-		
+	void read(){	
 		if(in.hasNextLine())
 		{
 			line.append(in.nextLine());
 			interpretLine();
 		}
-
 	}
 
 	void interpretLine(){
@@ -235,9 +234,13 @@ class UserThread extends Thread {
 		// I want to save this line to the disk...
 		line.append(in.nextLine);
 
+		int writingTo = sector;
+		int length = 0;
 		while(line.charAt[1] != 'e')
 		{
-			disks[diskToUse].write(sector, line);
+			disks[diskToUse].write(writingTo, line);
+			writingTo++;
+			length++;
 			
 			//clear line
 			line.delete(0, line.length());
@@ -246,13 +249,18 @@ class UserThread extends Thread {
 			line.append(in.nextLine);
 		}
 
-		if(line.charAt[1] != 'e')
+		if(line.charAt[1] == 'e')
 		{
 			line.delete(0, line.length());
+
 		}
 
 
-		//furthermore, i need to create a FileInfo object for this file
+		//create a FileInfo object for this file
+		FileInfo thisFile = new FileInfo(diskToUse, sector, writeTo - sector);
+		StringBuffer n = new StringBuffer(fname);
+		dm.enter(n, thisFile);
+
 		read();
 	}
 	void requestPrint() {
