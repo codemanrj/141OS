@@ -289,7 +289,6 @@ class Printer
 		System.out.println("Created a printer ");
 	}
 	
-	
 	void print(StringBuffer b)
 	{
 		String s = "";
@@ -339,7 +338,6 @@ class FileInfo{
 		startingSector = sector;
 		fileLength = length;
 	}
-
 	int getDisk()
 	{
 		return diskNumber;
@@ -354,26 +352,25 @@ class FileInfo{
 
 
 class DirectoryManager {
-	private Hashtable<String, FileInfo> T 
+	private Hashtable<String, FileInfo> T;
 
 	DirectoryManager()
 	{
 		T = new Hashtable<String, FileInfo>();
 	}
-
 	void enter(StringBuffer fileName, FileInfo file){
-		T.put(fileName, file);
+		T.put(fileName.toString(), file);
 	}
 	FileInfo lookup(StringBuffer fileName)
 	{
-		FileInfo data = T.get(fileName);
+		FileInfo data = T.get(fileName.toString());
 		if(data != null)
 		{
 			return data;
 		}
 		else{
 			System.out.println("Could not find the specified file. ");
-			return 0;
+			return null;
 		}
 	}
 }
@@ -393,7 +390,12 @@ class ResourceManager {
 					isFree[i] = false;
 					return i;
 				}
-			this.wait(); // block until someone releases Resource
+			try {
+				this.wait();
+			} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+				e.printStackTrace();
+			} // block until someone releases Resource // block until someone releases Resource
 		}
 	}
 	synchronized void release( int index ) {
