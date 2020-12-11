@@ -23,7 +23,7 @@ public class OS141 {
 	Printer printers[];
 	Disk disks[];
 	//PrinterManager pm;
-	//DiscManager dm;
+	DiscManager dm;
 
 	OS141(String [] args)
 	{
@@ -41,6 +41,8 @@ public class OS141 {
 		for(int i=0; i<numPrinters; i++) {
 			printers[i] = new Printer(i+1);
 		}
+
+		dm = new DiskManager(numDisks);
 	}
 	void configure(String[] argv)
 	{
@@ -68,20 +70,12 @@ public class OS141 {
 	{	
 		OS141 os = new OS141(args);
 
-		StringBuffer s = new StringBuffer("Hello from main ");
-		for(Printer p : os.printers)
-		{
-			p.print(s);
-		}
-
-
-	
-	/*	
 		for(UserThread user : os.users)
 		{
 			user.start();
+			user.read();
 		}
-	*/
+
 	}
 }
 
@@ -105,6 +99,7 @@ class Disk {
 		}
 		Thread.sleep(200);
 	}  // call sleep
+
 	StringBuffer read(int sector, StringBuffer data) throws InterruptedException {
 		for(int i=0; i<capacity; i++) 
 		{
@@ -173,27 +168,199 @@ class UserThread extends Thread {
 	
 	private StringBuffer line;
 	private String fileName;
-	File infile;
+	File inputFile;
 	Scanner in;
-	//Constructor
+
 	UserThread(int id){
 		this.line = new StringBuffer();
-		String fname = "USER" + Integer.toString(id);
-		
+		fileName = "USER" + Integer.toString(id);
+		inputFile = new File(fileName);
+		in = new Scanner(inputFile);
+
 		System.out.println("Created a user");
 	}
 	
-/*	void saveToDisk() {
-		try {
-			infile = new File(fileName);
-			in = new Scanner(infile);
-		} catch (FileNotFoundException e) {
-			System.out.println("User file not found ");
+	void read(){
+		
+		if(in.hasNextLine())
+		{
+			line.append(in.nextLine());
+			interpretLine();
+		}
+
+	}
+
+	void interpretLine(){
+		int i = 0;
+		String fileName;
+		if(line.charAt(i) == '.')
+		{
+			i++;
+			if(line.charAt(i) == 's')
+			{
+				saveToDisk();
+			}
+			else{ //it is a 'p'
+				requestPrint();
+			}
 		}
 	}
-	
-	void requestPrint() {
+
+	//the line in buffer contains either save or print
+	//and the name of the file 
+	//i is the index where the name starts on line
+	String getFileName(int i)
+	{
+		 return line.substring(i);
 	}
-*/
+
+	void saveToDisk() {
+		int diskToUse = dm.request(); //request the next available disk
+		int sector = disks[diskToUse].getNextFreeSector();
+
+		int i = 0;
+		while(line.charAt(i) != '\0')
+		{
+			i++;
+		}
+
+		String fname = getFileName(i+1); //this name will be entered in to Directory Manager
+									   // as a string buffer
+
+		//clear the string buffer
+		line.delete(0, line.length());
+
+		//put the next line in it 
+		// while the second characte of this line isn't e for .end
+		// I want to save this line to the disk...
+		line.append(in.nextLine);
+
+		while(line.charAt[1] != 'e')
+		{
+			disks[diskToUse].write(sector, line);
+			
+			//clear line
+			line.delete(0, line.length());
+
+			//append the next
+			line.append(in.nextLine);
+		}
+
+		if(line.charAt[1] != 'e')
+		{
+			line.delete(0, line.length());
+		}
+
+
+		//furthermore, i need to create a FileInfo object for this file
+		read();
+	}
+	void requestPrint() {
+		PrintJobThread p = new PrintJobThread();
+		p.start();
+	}
+}
+
+class FileInfo{
+	int diskNumber;
+	int startingSector;
+	int fileLength;
+	
+	FileInfo(int disk, int sector, int length)
+	{
+		diskNumber = disk;
+		startingSector = sector;
+		fileLength = length;
+	}
+}
+
+
+class DirectoryManager {
+	private Hashtable<String, FileInfo> T 
+
+	DirectoryManager()
+	{
+		T = new Hashtable<String, FileInfo>();
+	}
+
+	void enter(StringBuffer fileName, FileInfo file){
+		T.put(fileName, file);
+	}
+	FileInfo lookup(StringBuffer fileName)
+	{
+		FileInfo data = T.get(fileName);
+		if(i != null)
+		{
+			return data;
+		}
+		else{
+			return 0;
+		}
+	}
+}
+
+
+class ResourceManager {
+	boolean isFree[];
+	ResourceManager(int numberOfItems) {
+		isFree = new boolean[numberOfItems];
+		for (int i=0; i<isFree.length; ++i)
+			isFree[i] = true;
+	}
+	synchronized int request() {
+		while (true) {
+			for (int i = 0; i < isFree.length; ++i)
+				if ( isFree[i] ) {
+					isFree[i] = false;
+					return i;
+				}
+			this.wait(); // block until someone releases Resource
+		}
+	}
+	synchronized void release( int index ) {
+		isFree[index] = true;
+		this.notify(); // let a blocked thread run
+	}
+}
+
+class DiskManager extends ResourceManager {
+  //also keeps track of the next free sector on each disk, 
+  //which is useful for saving files. 
+  //The DiskManager should contain the DirectoryManager for finding file sectors on Disk.
+  int nextFreeSector[];
+
+  DiskManager(int numberOfItems)
+  {
+	  super(numberOfItems);
+	  nextFreeSector = new int[numberOfItems];
+	  for(int i = 0; i < numberOfItems; i++)
+	  {
+		  nextFreeSector[i] = 0;
+	  }
+  }
+
+	//should I override request to also return the sector or make a new method to return nextfreesector i
+  int getNextFreeSector(int i)
+  {
+	  return nextFreeSector[i];
+  }
+
+
+	//modified to update and keep track of the next free sector
+	synchronized void release( int index, int sectorsUsed ) {
+		isFree[index] = true;
+		nextFreeSector[index] += sectorsUsed;
+		this.notify(); // let a blocked thread run
+	}
+
+}
+
+class PrinterManager extends ResourceManager {
+	PrinterManager(int n){
+		super(n);
+	}
+}
+
+class PrintJobThread extends Thread{
 
 }
