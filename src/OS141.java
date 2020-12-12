@@ -12,6 +12,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
+import java.util.Hashtable;
 
 public class OS141 {
 	
@@ -90,7 +91,7 @@ public class OS141 {
 
 		UserThread(int id){
 			this.line = new StringBuffer();
-			fileName = "USER" + Integer.toString(id);
+			fileName = "inputs/USER" + Integer.toString(id);
 			inputFile = new File(fileName);
 			try {
 				in = new Scanner(inputFile);
@@ -137,7 +138,7 @@ public class OS141 {
 			int sector = dm.getNextFreeSector(diskToUse);
 
 			int i = 0;
-			while(line.charAt(i) != '\0')
+			while(line.charAt(i) != 32)
 			{
 				i++;
 			}
@@ -191,7 +192,7 @@ public class OS141 {
 		void requestPrint() {
 
 			int i = 0;
-			while(line.charAt(i) != '\0')
+			while(line.charAt(i) != 32)
 			{
 				i++;
 			}
@@ -257,18 +258,15 @@ class Disk {
 		System.out.println("Created a disk ");
 	}
 	void write(int sector, StringBuffer data) throws InterruptedException {
-		for(int i =0; i < data.capacity(); i++)
-		{
-			sectors[sector].append(data.charAt(i));
-		}
+		
+		sectors[sector].append(data);
 		Thread.sleep(200);
 	}  // call sleep
 
 	StringBuffer read(int sector, StringBuffer data) throws InterruptedException {
-		for(int i=0; i<capacity; i++) 
-		{
-			data.append(sectors[sector].charAt(i));
-		}
+		
+		data.append(sectors[sector]);
+	
 		Thread.sleep(200);
 		
 		return data;
