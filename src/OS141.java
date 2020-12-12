@@ -1,6 +1,5 @@
 /*
 Author: Raul Montano Jr
-
 Reference for FILE I/O : 
 https://beginnersbook.com/2014/01/how-to-write-to-file-in-java-using-bufferedwriter/
 */
@@ -15,16 +14,15 @@ import java.util.Scanner;
 import java.util.Hashtable;
 
 public class OS141 {
-	
 	int numUsers = 0;
 	int numDisks = 0; 
 	int numPrinters = 0;
 	String userNames[];
 	UserThread users[];
 	Printer printers[];
-	public Disk disks[];
-	public PrinterManager pm;
-	public DiskManager dm;
+	Disk disks[];
+	PrinterManager pm;
+	DiskManager dm;
 	DirectoryManager dirm;
 
 	OS141(String [] args)
@@ -77,7 +75,6 @@ public class OS141 {
 		for(UserThread user : os.users)
 		{
 			user.start();
-			user.read();
 		}
 
 	}
@@ -100,6 +97,11 @@ public class OS141 {
 				e.printStackTrace();
 			}
 			System.out.println("Created a user");
+		}
+
+		@Override
+		public void run(){
+			read();
 		}
 		
 		void read(){	
@@ -205,19 +207,24 @@ public class OS141 {
 			}
 
 			String fname = getFileName(i+1);
-			PrintJobThread p = new PrintJobThread();
+			PrintJobThread p = new PrintJobThread(fname);
 			p.start();
-			p.doJob(fname);
-
 		}
 	}
 	
 	class PrintJobThread extends Thread{
 		StringBuffer line;
+		String name;
 	
-		PrintJobThread()
+		PrintJobThread(String s)
 		{
+			name = s;
 			line = new StringBuffer();
+		}
+
+		@Override
+		public void run(){
+			doJob(name);
 		}
 	
 		void doJob(String s)
