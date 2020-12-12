@@ -296,6 +296,7 @@ class Printer
 	
 	void print(StringBuffer b)
 	{
+		b.append('\n');
 		CharSequence s = b.subSequence(0, b.length());
 
 			try {
@@ -304,7 +305,7 @@ class Printer
 	     			file.createNewFile();
 	  			}
 
-				FileWriter fw = new FileWriter(file);
+				FileWriter fw = new FileWriter(file, true);
 				out = new BufferedWriter(fw);
 				out.append(s);
 				System.out.println("Success");
