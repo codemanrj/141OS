@@ -195,6 +195,7 @@ public class OS141 {
 			StringBuffer n = new StringBuffer(fname);
 			dirm.enter(n, thisFile);
 
+			dm.release(diskToUse, length);
 			read();
 		}
 
@@ -251,6 +252,8 @@ public class OS141 {
 					printers[printerToUse].print(line);
 					line.delete(0, line.length());
 				}
+
+				pm.release(printerToUse);
 			}
 		}
 	}
