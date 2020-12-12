@@ -121,6 +121,14 @@ public class OS141 {
 				}
 				else{ //it is a 'p'
 					requestPrint();
+					
+					//clear line
+					line.delete(0, line.length());
+					if(in.hasNextLine())
+					{
+						line.append(in.nextLine());
+						interpretLine();
+					}
 				}
 			}
 		}
@@ -179,7 +187,6 @@ public class OS141 {
 				line.delete(0, line.length());
 
 			}
-
 
 			//create a FileInfo object for this file
 			FileInfo thisFile = new FileInfo(diskToUse, sector, length);
@@ -289,12 +296,8 @@ class Printer
 	
 	void print(StringBuffer b)
 	{
-		String s = "";
+		CharSequence s = b.subSequence(0, b.length());
 
-		for(int i=0; i <b.length(); i++)
-		{
-			s = s + b.charAt(i);
-		}
 			try {
 				File file = new File(name);
 				if (!file.exists()) {
@@ -303,7 +306,7 @@ class Printer
 
 				FileWriter fw = new FileWriter(file);
 				out = new BufferedWriter(fw);
-				out.write(s, 0, b.length());
+				out.append(s);
 				System.out.println("Success");
 				} catch (IOException e) {
 					e.printStackTrace();
@@ -311,7 +314,7 @@ class Printer
 					{ 
 					try{
 						if(out!=null)
-						out.close();
+						out.flush();
 					}catch(Exception ex){
 						System.out.println("Error in closing the BufferedWriter"+ex);
 						}
